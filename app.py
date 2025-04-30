@@ -4,91 +4,92 @@ from PIL import Image
 from langchain_google_genai import GoogleGenerativeAI
 import os
 from gtts import gTTS
-import speech_recognition as sr
+import speech_recognition as sr  # Importing SpeechRecognition for voice input
 
 st.balloons()
 st.snow()
 
-# Initialize Google Generative AI model
-model = genai.GenerativeModel(model_name="gemini-1.5-flash")
-llm = GoogleGenerativeAI(model="gemini-1.5-flash", api_key="AIzaSyBXMcdtCJ2OQtAOaBpztTAjQjJnjmBLIWg")
+# title with white background
+st.markdown("""
+    <style>
+        .title {
+            font-size: 36px;
+            font-weight: bold;
+            color: #0044cc; /* Blue color */
+            background-color: #f0f0f0; /* Light grey background */
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+    </style>
+    <div class="title">
+        🌟 Empowering Vision: Chakradhar's AI-Driven Solution for Visually Impaired Assistance 🤖 📝
+    </div>
+""", unsafe_allow_html=True)
 
-# Custom function to convert text to speech in different languages
-def text_to_speech(text, language='en'):
-    """Function to convert text to speech in the specified language."""
-    # Remove any colons from the text
-    cleaned_text = text.replace(":", "")
-    
-    # Convert the cleaned text to speech in the chosen language
-    audio_file = "output_1.mp3"
-    tts = gTTS(text=cleaned_text, lang=language, slow=False)
-    tts.save(audio_file)
-    
-    return audio_file
-
-# Function for speech recognition to choose language
-def recognize_language():
-    """Recognize user's spoken language choice (Hindi or Telugu)."""
+# Function to capture voice and convert it to text
+def recognize_speech_from_mic():
     recognizer = sr.Recognizer()
     mic = sr.Microphone()
 
     with mic as source:
-        st.write("🎤 Please speak 'Hindi' or 'Telugu' to choose your preferred language.")
         recognizer.adjust_for_ambient_noise(source)
+        st.write("🎤 Please speak...")
         audio = recognizer.listen(source)
+
+    try:
+        recognized_text = recognizer.recognize_google(audio)
+        st.write(f"Recognized text: {recognized_text}")
+        return recognized_text
+    except sr.UnknownValueError:
+        st.error("Sorry, I could not understand the audio.")
+        return None
+    except sr.RequestError:
+        st.error("Could not request results from the speech recognition service.")
+        return None
+
+# Function to convert text to speech in selected language
+def text_to_speech(text, lang='en'):
+    """Converts the given text into speech in the specified language."""
+    try:
+        tts = gTTS(text=text, lang=lang, slow=False)
+        audio_file = "output.mp3"
+        tts.save(audio_file)
+        return audio_file
+    except Exception as e:
+        st.error(f"Error in text-to-speech: {e}")
+        return None
+
+# Language options for TTS
+language_options = {
+    'English': 'en',
+    'Spanish': 'es',
+    'French': 'fr',
+    'German': 'de',
+    'Italian': 'it',
+    'Hindi': 'hi',
+    'Chinese': 'zh',
+    'Japanese': 'ja',
+    'Korean': 'ko',
+}
+
+# Sidebar for selecting language
+selected_language = st.sidebar.selectbox("Choose Language for Text-to-Speech", list(language_options.keys()))
+
+# Voice input button to speak text
+if st.button("🎙️ Speak to Convert to Text"):
+    recognized_text = recognize_speech_from_mic()
+    if recognized_text:
+        st.write(f"You said: {recognized_text}")
         
-        try:
-            # Recognize the speech and return language choice
-            speech = recognizer.recognize_google(audio).lower()
-            st.write(f"Detected speech: {speech}")
-            if "telugu" in speech:
-                return 'te'  # Telugu language code
-            elif "hindi" in speech:
-                return 'hi'  # Hindi language code
-            else:
-                st.write("Couldn't detect 'Telugu' or 'Hindi'. Defaulting to English.")
-                return 'en'  # Default language is English
-        except sr.UnknownValueError:
-            st.write("Sorry, I couldn't understand the speech. Please try again.")
-            return 'en'
-        except sr.RequestError:
-            st.write("Sorry, there was an issue with the speech recognition service.")
-            return 'en'
+        # Convert recognized speech to speech again (TTS)
+        audio_file = text_to_speech(recognized_text, lang=language_options[selected_language])
+        if audio_file:
+            with open(audio_file, "rb") as file:
+                st.audio(file.read(), format="audio/mp3")
+            os.remove(audio_file)
 
-# UI for selecting language
-language_option = st.radio(
-    "Select a language for voice output:",
-    ("English", "Hindi", "Telugu"),
-    index=0
-)
+# Main Section (image upload, scene description, etc.) will go here
 
-# Text-to-speech in selected language
-if language_option == "Hindi":
-    lang_code = "hi"
-elif language_option == "Telugu":
-    lang_code = "te"
-else:
-    lang_code = "en"
-
-# File upload section
-uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
-
-if uploaded_file:
-    image = Image.open(uploaded_file)
-    st.image(image, caption="Uploaded Image", use_container_width=True)
-
-    # Call the language-specific Text-to-Speech function after a button is pressed
-    if st.button("Describe Scene"):
-        with st.spinner("Analyzing the scene..."):
-            try:
-                # Your existing code to get the scene description
-                response = "This is a test description of the uploaded image."
-                audio_file = text_to_speech(response, language=lang_code)
-
-                # Play the audio response
-                with open(audio_file, "rb") as file:
-                    st.audio(file.read(), format="audio/mp3")
-                os.remove(audio_file)
-                st.write(response)
-            except Exception as e:
-                st.error(f"Error: {str(e)}")
