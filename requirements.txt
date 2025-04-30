@@ -1,6 +1,7 @@
 streamlit
 google-generativeai
-langchain-google-genai
-gtts
 Pillow
+langchain-google-genai
+gTTS
 SpeechRecognition
+pyaudio
