@@ -6,6 +6,9 @@ import os
 from gtts import gTTS
 import speech_recognition as sr
 
+st.balloons()
+st.snow()
+
 # Initialize Google Generative AI model
 model = genai.GenerativeModel(model_name="gemini-1.5-flash")
 llm = GoogleGenerativeAI(model="gemini-1.5-flash", api_key="AIzaSyBXMcdtCJ2OQtAOaBpztTAjQjJnjmBLIWg")
@@ -39,9 +42,9 @@ def recognize_language():
             speech = recognizer.recognize_google(audio).lower()
             st.write(f"Detected speech: {speech}")
             if "telugu" in speech:
-                return 'te'
+                return 'te'  # Telugu language code
             elif "hindi" in speech:
-                return 'hi'
+                return 'hi'  # Hindi language code
             else:
                 st.write("Couldn't detect 'Telugu' or 'Hindi'. Defaulting to English.")
                 return 'en'  # Default language is English
